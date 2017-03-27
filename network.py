@@ -10,16 +10,41 @@ class Thing:
 class Device(Thing):
 	def __init__(self):
 		self.router = None
+		self.throughput = 0
+		#The following are for time_pass
+		self.state = 0 #0 is free, 1 is busy
+		self.bitsRemaining = 0
+		self.packet = None
 		Thing.__init__(self)
 
-	def connect(self, router):
+	def connect(self, router, throughput):
 		self.router = router
+		self.throughput = throughput
+		router.devices[self] = throughput
 
-	def transmit(self, packetSize, destination):
-		if self.router:
-			p = Packet(self, destination, size)
-			self.router.route(p)
+	def time_pass(self, time, destination): #takes in time and destination ID
+		if self.router and self.state == 0: #free and connected to internet
+			if random.random() < 0.5: #with 50% probability, transmit
+				self.state = 1
+				self.packet = Packet(self.id, destination, random.randint(160,524280))
+				self.bitsRemaining = self.packet.size
 
+		self.bitsRemaining -= time * self.throughput
+
+		if bitsRemaining <= 0: #done transmitting
+			self.state = 0
+			self.router.enqueue(self.packet) #pushed to router
+			self.bitsRemaining = 0
+			self.packet = None
+
+	def poll(): #return remaining time for event
+		if bitsRemaining != 0 and self.throughput != 0: #how much time left to finish transmission
+			return self.bitsRemaining / self.throughput
+		else: #don't pick this event as taking minimum time because there's nothing going on here
+			return 1e100
+
+	def receive(self, packet):
+		return True
 
 class Router(Thing):
 	alpha = 0.1
@@ -27,6 +52,13 @@ class Router(Thing):
 		self.linkList = {} #dictionary of neighbors and the links to them
 		self.qValues = util.Counter()
 		self.queue = util.Queue()
+		self.devices = {}
+		#The following are for time_pass
+		self.state = 0 #0 is free, 1 is busy
+		self.target = None
+		self.linkThroughput = 0
+		self.bitsRemaining = 0
+		self.currentPacket = None
 		Thing.__init__(self)
 
 	def connect(self, router2, throughput): #Forms a link/edge between two routers, can add more stuff later
@@ -45,9 +77,16 @@ class Router(Thing):
 		diff = (nextQ) - self.qValues[(dest, nextLink)] #can add queueing time here
 		self.qValues[(dest,nextLink)] += Router.alpha * diff
 
-	def route(self, packet): #work in progress, never returns True at the moment!
+	def sendToDevice(self, packet):
+		return packet.dest.receive(packet)
+
+	def enqueue(self, packet):
+		self.queue.push(packet)
+
+	def route(self):
 		dest = packet.dest
-		if dest == self:
+		if dest in self.devices.keys(): #if the destination is connected to router, we're done!
+			return self.sendToDevice(packet)
 
 		minQ = 1e100
 		minLink = None
@@ -58,12 +97,54 @@ class Router(Thing):
 				minLink = neighbor
 		if minLink != None:
 			self.qUpdate(minLink, dest) #updates Q value based on the neighbor
-			return minLink.route(packet) #forwards packet to neighbor, can tell if it arrived
-		return False #packet dropped because there are no neighbors
+			minLink.route(packet) #forwards packet to neighbor
+
+	def time_pass(self, time):
+		if self.state == 0: #free
+			self.currentPacket = self.queue.pop()
+			if self.currentPacket: #packet actually exists and got dequeued
+				self.state = 1 #busy
+				self.bitsRemaining = self.currentPacket.size
+				dest = packet.destID
+
+				for device,throughput in self.devices: 
+					if device.id == dest: #if the destination device is connected to router
+						self.target = dest
+						self.linkThroughput = throughput
+
+				if self.target == None: #if we have to forward to a different router
+					minQ = 1e100
+					minLink = None
+					for neighbor in self.getNeighbors(): #finds minimum Q-value neighbor
+						nextQ = self.qValues[(dest, neighbor)]
+						if nextQ < minQ:
+							minQ = nextQ
+							minLink = neighbor
+					if minLink != None:
+						self.qUpdate(minLink, dest) #updates Q value based on the neighbor
+					self.target = minLink
+					self.throughput = self.linkList[minLink][0]
+
+		self.bitsRemaining -= time * self.throughput #actually transmit yo
+		
+		if bitsRemaining <= 0: #done transmitting, reset everything
+			self.state = 0
+			if type(self.target) == Router: #puts packet in next router's queue
+				self.target.enqueue(self.currentPacket)
+			self.target = None
+			self.throughput = 0
+			self.bitsRemaining = 0
+			self.currentPacket = None
+
+	def poll(): #return remaining time for event
+		if bitsRemaining != 0 and self.throughput != 0: #how much time left to finish transmission
+			return self.bitsRemaining / self.linkThroughput
+		else: #don't pick this event as taking minimum time because there's nothing going on here
+			return 1e100
 
 class Packet:
 	def __init__(self, source, destination, size):
-		self.src = source
-		self.dest = destination
+		self.srcID = source
+		self.destID = destination
 		self.size = size
 		
