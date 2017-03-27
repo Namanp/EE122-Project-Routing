@@ -1,14 +1,33 @@
 import random
 import util
 
-class Router:
+class Thing:
 	i = 0
+	def __init__(self):
+		self.id = Thing.i #Assign unique ID
+		Thing.i += 1
+
+class Device(Thing):
+	def __init__(self):
+		self.router = None
+		Thing.__init__(self)
+
+	def connect(self, router):
+		self.router = router
+
+	def transmit(self, packetSize, destination):
+		if self.router:
+			p = Packet(self, destination, size)
+			self.router.route(p)
+
+
+class Router(Thing):
 	alpha = 0.1
 	def __init__(self):
-		self.id = Router.i #Assign unique ID
-		Router.i += 1
 		self.linkList = {} #dictionary of neighbors and the links to them
 		self.qValues = util.Counter()
+		self.queue = util.Queue()
+		Thing.__init__(self)
 
 	def connect(self, router2, throughput): #Forms a link/edge between two routers, can add more stuff later
 		link = Link.__init__(self, router2, throughput)
@@ -43,9 +62,8 @@ class Router:
 		return False #packet dropped because there are no neighbors
 
 class Packet:
-	def __init__(self, source, destination, data, size):
+	def __init__(self, source, destination, size):
 		self.src = source
 		self.dest = destination
 		self.size = size
-		self.data = data
 		
