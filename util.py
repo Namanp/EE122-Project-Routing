@@ -1,4 +1,4 @@
-class Counter(dict):
+class Counter(dict): ################## Changed so default is 1e100
     """
     A counter keeps track of counts for a set of keys.
 
@@ -39,7 +39,7 @@ class Counter(dict):
     also be normalized and their total count and arg max can be extracted.
     """
     def __getitem__(self, idx):
-        self.setdefault(idx, 0)
+        self.setdefault(idx, 1e100)
         return dict.__getitem__(self, idx)
 
     def incrementAll(self, keys, count):

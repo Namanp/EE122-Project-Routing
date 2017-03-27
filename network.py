@@ -29,13 +29,14 @@ class Device(Thing):
 				self.packet = Packet(self.id, destination, random.randint(160,524280))
 				self.bitsRemaining = self.packet.size
 
-		self.bitsRemaining -= time * self.throughput
+		if self.state == 1: #transmitting
+			self.bitsRemaining -= time * self.throughput
 
-		if bitsRemaining <= 0: #done transmitting
-			self.state = 0
-			self.router.enqueue(self.packet) #pushed to router
-			self.bitsRemaining = 0
-			self.packet = None
+			if bitsRemaining <= 0: #done transmitting
+				self.state = 0
+				self.router.enqueue(self.packet) #pushed to router
+				self.bitsRemaining = 0
+				self.packet = None
 
 	def poll(): #return remaining time for event
 		if bitsRemaining != 0 and self.throughput != 0: #how much time left to finish transmission
@@ -70,7 +71,8 @@ class Router(Thing):
 		return linkList.keys()
 
 	def minQValue(self, dest): #used in updating Q-values
-		return min([self.qValues[(dest, neighbor)] for neighbor in self.getNeighbors()])
+		neighbors = self.getNeighbors()
+		return min([self.qValues[(dest, neighbor)] for neighbor in neighbors])
 
 	def qUpdate(self, nextLink, dest):
 		nextQ = nextLink.minQValue(dest) #gets t, the min Q-value from neighbor
@@ -82,22 +84,6 @@ class Router(Thing):
 
 	def enqueue(self, packet):
 		self.queue.push(packet)
-
-	def route(self):
-		dest = packet.dest
-		if dest in self.devices.keys(): #if the destination is connected to router, we're done!
-			return self.sendToDevice(packet)
-
-		minQ = 1e100
-		minLink = None
-		for neighbor in self.getNeighbors(): #finds minimum Q-value neighbor
-			nextQ = self.qValues[(dest, neighbor)]
-			if nextQ < minQ:
-				minQ = nextQ
-				minLink = neighbor
-		if minLink != None:
-			self.qUpdate(minLink, dest) #updates Q value based on the neighbor
-			minLink.route(packet) #forwards packet to neighbor
 
 	def time_pass(self, time):
 		if self.state == 0: #free
@@ -117,24 +103,29 @@ class Router(Thing):
 					minLink = None
 					for neighbor in self.getNeighbors(): #finds minimum Q-value neighbor
 						nextQ = self.qValues[(dest, neighbor)]
-						if nextQ < minQ:
+						if nextQ <= minQ:
 							minQ = nextQ
 							minLink = neighbor
-					if minLink != None:
-						self.qUpdate(minLink, dest) #updates Q value based on the neighbor
-					self.target = minLink
-					self.throughput = self.linkList[minLink][0]
+					if minLink != None: #set up to transmit to neighbor router
+						self.target = minLink
+						self.throughput = self.linkList[minLink][0]
+					else: #no neighbors, reset state and discard packet
+						self.state = 0
+						self.packet = None
+						self.bitsRemaining = 0
 
-		self.bitsRemaining -= time * self.throughput #actually transmit yo
-		
-		if bitsRemaining <= 0: #done transmitting, reset everything
-			self.state = 0
-			if type(self.target) == Router: #puts packet in next router's queue
-				self.target.enqueue(self.currentPacket)
-			self.target = None
-			self.throughput = 0
-			self.bitsRemaining = 0
-			self.currentPacket = None
+		if self.state == 1: #transmitting
+			self.bitsRemaining -= time * self.throughput #actually transmit
+			
+			if bitsRemaining <= 0: #done transmitting, reset everything
+				self.state = 0
+				if type(self.target) == Router:
+					self.target.enqueue(self.currentPacket) #puts packet in next router's queue
+					self.qUpdate(minLink, dest) #updates Q value based on the neighbor
+				self.target = None
+				self.throughput = 0
+				self.bitsRemaining = 0
+				self.currentPacket = None
 
 	def poll(): #return remaining time for event
 		if bitsRemaining != 0 and self.throughput != 0: #how much time left to finish transmission
