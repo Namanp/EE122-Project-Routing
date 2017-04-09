@@ -8,6 +8,9 @@ class Setup:
     	self.initNodes(numDevices, numNodes)
     	self.makeConnections(lowerConnect, upperConnect)
 
+    def pickDevice(self):
+        
+
     def initNodes(self, numDevices, numNodes):
     	self.networkMap = {"Device": {}, "Router": {}}
 
@@ -45,9 +48,11 @@ class Setup:
     def simulate(self, time):
     	# check all devices if they want to transmit
     	for i in range(self.numDevices):
-
+            self.networkMap["Device"][i].transmit
+    		
     	# find shortest action
    		# fast forward time
+   		# check if any packets made it to destination
    		# repeat until time is up 
 
 

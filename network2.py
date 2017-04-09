@@ -89,7 +89,10 @@ class Device(Router):
 	def canTransmit(self):
 		return self.state == 0
 
-	def transmit(self, device):
+	def pickDevice(self, numDevices):
+		a = 
+
+	def transmit(self, numDevices):
 		if self.state == 0 and random.random() < 0.5::
 			packet = self.genPacket(device)
 			self.enqueue(packet)
