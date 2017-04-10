@@ -4,7 +4,7 @@ import util
 class Thing:
 	i = 0
 	def __init__(self):
-		self.id = Thing.i #Assign unique ID
+		self.ID = Thing.i #Assign unique ID
 		Thing.i += 1
 
 class Device(Thing):
@@ -15,12 +15,17 @@ class Device(Thing):
 		self.state = 0 #0 is free, 1 is busy
 		self.bitsRemaining = 0
 		self.packet = None
+		self.connected = False
 		Thing.__init__(self)
 
 	def connect(self, router, throughput):
 		self.router = router
 		self.throughput = throughput
 		router.devices[self] = throughput
+		self.connected = True
+
+	def isConnected(self):
+		return self.connected
 
 	def time_pass(self, time, destination): #takes in time and destination ID
 		if self.router and self.state == 0: #free and connected to internet
