@@ -6,7 +6,7 @@ class Setup:
     	self.numDevices = numDevices
     	self.numNodes = numNodes
     	self.initNodes(numDevices, numNodes)
-    	self.makeConnections(lowerConnect, upperConnect)
+    	self.makeConnections()
 
     def pickDevice(self,currDevice): #return a destination for a new packet
     	deviceList = dict(self.networkMap["Device"])
@@ -57,10 +57,6 @@ class Setup:
 
 
     def simulate(self, time):
-    	''' I don't think this part is required since nodes automatically transmit with some probability when they are idle
-    	# check all devices if they want to transmit
-    	for i in range(self.numDevices):
-            self.networkMap["Device"][i].transmit '''
         requestedRuntime = time
 
     	while time > 0:	
@@ -76,22 +72,21 @@ class Setup:
 	    			minTime = time
 	   		# fast forward time
 	   		for i in range(self.numDevices):
-	    		currDevice = self.networkMap["Device"][i]
-	    		destID = self.pickDevice(currDevice)
-	    		currDevice.timePass(minTime, destID)
-	    	for i in range(self.numNodes):
-	    		self.networkMap["Router"][i].timePass(minTime)
-	    	''' I believe this part is done in the timePass methods
-	   		# check if any packets made it to destination
-	   		'''
-	   		time -= minTime
+	   			currDevice = self.networkMap["Device"][i]
+	   			destID = self.pickDevice(currDevice)
+	   			currDevice.timePass(minTime, destID)
+	   		for i in range(self.numNodes):
+				self.networkMap["Router"][i].timePass(minTime)
+			time -= minTime
    			# repeat until time is up or becomes negative
 
-   		timeElapsed = requestedRuntime - time
-   		return timeElapsed #can return more information as needed later
+
+		timeElapsed = requestedRuntime - time
+		return timeElapsed #can return more information as needed later
 
 
 
 s = Setup(3, 7)
+s.simulate(10e6)
         
 

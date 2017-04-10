@@ -16,6 +16,7 @@ class Device(Thing):
 		self.bitsRemaining = 0
 		self.packet = None
 		self.connected = False
+		self.completed = {}
 		Thing.__init__(self)
 
 	def connect(self, router, throughput):
@@ -39,6 +40,7 @@ class Device(Thing):
 
 			if bitsRemaining <= 0: #done transmitting
 				self.state = 0
+				self.packet.delay += self.packet.size/self.throughput #add transmission time
 				self.router.enqueue(self.packet) #pushed to router
 				self.bitsRemaining = 0
 				self.packet = None
@@ -50,7 +52,11 @@ class Device(Thing):
 			return 1e100
 
 	def receive(self, packet):
-		return True
+		src = packet.src
+		if src in self.completed:
+			self.completed[src].append([packet.size, packet.delay])
+		else:
+			self.completed[src] = [[packet.size, packet.delay]]
 
 class Router(Thing):
 	alpha = 0.1
@@ -130,9 +136,12 @@ class Router(Thing):
 			
 			if bitsRemaining <= 0: #done transmitting, reset everything
 				self.state = 0
+				self.currentPacket.delay += self.currentPacket.size/self.throughput #add transmission time
 				if type(self.target) == Router:
 					self.target.enqueue(self.currentPacket) #puts packet in next router's queue
 					self.qUpdate(minLink, dest) #updates Q value based on the neighbor
+				else: #target is a device/destination
+					self.target.receive(self.currentPacket)
 				self.target = None
 				self.throughput = 0
 				self.bitsRemaining = 0
