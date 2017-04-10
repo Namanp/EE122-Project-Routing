@@ -24,12 +24,12 @@ class Device(Thing):
 
 	def time_pass(self, time, destination): #takes in time and destination ID
 		if self.router and self.state == 0: #free and connected to internet
-			if random.random() < 0.5: #with 50% probability, transmit
+			if random.random() < 0.5: #with 50% probability, generate packet and send
 				self.state = 1
 				self.packet = Packet(self.id, destination, random.randint(160,524280))
 				self.bitsRemaining = self.packet.size
 
-		if self.state == 1: #transmitting
+		if self.state == 1: #transmitting, subtracts from bits remaining
 			self.bitsRemaining -= time * self.throughput
 
 			if bitsRemaining <= 0: #done transmitting
@@ -85,6 +85,12 @@ class Router(Thing):
 	def enqueue(self, packet):
 		self.queue.push(packet)
 
+	def connected(self):
+		return len(self.links.keys()) > 0
+
+	def numConnects(self):
+		return len(self.links.keys())
+
 	def time_pass(self, time):
 		if self.state == 0: #free
 			self.currentPacket = self.queue.pop()
@@ -138,4 +144,5 @@ class Packet:
 		self.srcID = source
 		self.destID = destination
 		self.size = size
+		self.delay = 0
 		

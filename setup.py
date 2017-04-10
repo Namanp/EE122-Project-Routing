@@ -1,4 +1,4 @@
-import network2
+import network
 import random
 
 class Setup:
@@ -15,11 +15,11 @@ class Setup:
     	self.networkMap = {"Device": {}, "Router": {}}
 
     	for i in range(numDevices):
-    		d = network2.Device()
+    		d = network.Device()
     		self.networkMap["Device"][d.nodeID] = d
 
     	for j in range(numNodes):
-    		n = Router()
+    		n = network.Router()
     		self.networkMap["Router"][n.nodeID] = n
 
     def genLink(self, node1, node2):
