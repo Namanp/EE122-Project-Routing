@@ -8,19 +8,21 @@ class Setup:
     	self.initNodes(numDevices, numNodes)
     	self.makeConnections(lowerConnect, upperConnect)
 
-    def pickDevice(self):
-    	''' I believe picking the device to send to is handled by Q-values in the timePass method of routers'''        
+    def pickDevice(self,currDevice): #return a destination for a new packet
+    	deviceList = dict(self.networkMap["Device"])
+    	deviceList.remove(currDevice)
+    	return random.sample(deviceList, 1)
 
     def initNodes(self, numDevices, numNodes): #creates routers and devices
-    	self.networkMap = {"Device": {}, "Router": {}}
+    	self.networkMap = {"Device": [], "Router": []}
 
     	for i in range(numDevices):
     		d = network.Device()
-    		self.networkMap["Device"][d.ID] = d
+    		self.networkMap["Device"].append(d)
 
     	for j in range(numNodes):
     		n = network.Router()
-    		self.networkMap["Router"][n.ID] = n
+    		self.networkMap["Router"].append(n)
 
     def genLink(self, node1, node2): #connects 2 things
     	lowerThroughput = 100
@@ -45,14 +47,13 @@ class Setup:
 	    		numConn = random.randint(1, upperBound)
 	    		newConn = numConn - currConn
 	    		if newConn > 0:
-	    			newIDs = random.sample(self.networkMap["Router"], newConn)
-	    			for newID in newIDs:
-	    				node2 = self.networkMap["Router"][newID]
-	    				self.genLink(currNode, node2)
+	    			newNodes = random.sample(self.networkMap["Router"], newConn)
+	    			for newNode in newNodes:
+	    				self.genLink(currNode, newNode)
 	    	else: #connect device to router
 	    		if not currNode.isConnected(): #connect only if the device is not already connected
-		    		newID = random.sample(self.networkMap["Router"], 1)
-		    		self.genLink(currNode,newID)
+		    		newNode = random.sample(self.networkMap["Router"], 1)
+		    		self.genLink(currNode,newNode)
 
 
     def simulate(self, time):
@@ -62,7 +63,7 @@ class Setup:
             self.networkMap["Device"][i].transmit '''
         requestedRuntime = time
 
-    	while time >0:	
+    	while time > 0:	
 	    	# find shortest action
 	    	minTime = 1e100
 	    	for i in range(self.numDevices):
@@ -75,7 +76,9 @@ class Setup:
 	    			minTime = time
 	   		# fast forward time
 	   		for i in range(self.numDevices):
-	    		self.networkMap["Device"][i].timePass(minTime)
+	    		currDevice = self.networkMap["Device"][i]
+	    		destID = self.pickDevice(currDevice)
+	    		currDevice.timePass(minTime, destID)
 	    	for i in range(self.numNodes):
 	    		self.networkMap["Router"][i].timePass(minTime)
 	    	''' I believe this part is done in the timePass methods
