@@ -74,11 +74,11 @@ class Router(Thing):
 		Thing.__init__(self)
 
 	def connect(self, router2, throughput): #Forms a link/edge between two routers by adding neighbor:throughput to both linkLists
-		self.linkList[router2] = (throughput)
-		router2.linkList[self] = (throughput)
+		self.linkList[router2] = throughput
+		router2.linkList[self] = throughput
 
 	def getNeighbors(self):
-		return linkList.keys()
+		return self.linkList.keys()
 
 	def minQValue(self, dest): #used in updating Q-values
 		neighbors = self.getNeighbors()
@@ -95,6 +95,9 @@ class Router(Thing):
 	def enqueue(self, packet):
 		self.queue.push(packet)
 
+	def isEmpty(self):
+		return self.queue.isEmpty()
+
 	def connected(self):
 		return len(self.linkList.keys()) > 0
 
@@ -102,14 +105,14 @@ class Router(Thing):
 		return len(self.linkList.keys())
 
 	def timePass(self, time):
-		if self.state == 0: #free
+		if self.state == 0 and not self.isEmpty(): #free and has packets
 			self.currentPacket = self.queue.pop()
 			if self.currentPacket: #packet actually exists and got dequeued
 				self.state = 1 #busy
 				self.bitsRemaining = self.currentPacket.size
-				dest = packet.destID
+				dest = self.currentPacket.destID
 
-				for device,throughput in self.devices: 
+				for device,throughput in self.devices.items(): 
 					if device.ID == dest: #if the destination device is connected to router
 						self.target = dest
 						self.linkThroughput = throughput
@@ -124,7 +127,7 @@ class Router(Thing):
 							minLink = neighbor
 					if minLink != None: #set up to transmit to neighbor router
 						self.target = minLink
-						self.throughput = self.linkList[minLink][0]
+						self.throughput = self.linkList[minLink]
 					else: #no neighbors, reset state and discard packet
 						self.state = 0
 						self.packet = None
@@ -136,7 +139,7 @@ class Router(Thing):
 			if self.bitsRemaining <= 0: #done transmitting, reset everything
 				self.state = 0
 				self.currentPacket.delay += self.currentPacket.size/self.throughput #add transmission time
-				if type(self.target) == Router:
+				if isinstance(self.target,Router):
 					self.target.enqueue(self.currentPacket) #puts packet in next router's queue
 					self.qUpdate(minLink, dest) #updates Q value based on the neighbor
 				else: #target is a device/destination
