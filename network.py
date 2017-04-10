@@ -28,25 +28,25 @@ class Device(Thing):
 	def isConnected(self):
 		return self.connected
 
-	def time_pass(self, time, destination): #takes in time and destination ID
+	def timePass(self, time, destination): #takes in time and destination ID
 		if self.router and self.state == 0: #free and connected to internet
 			if random.random() < 0.5: #with 50% probability, generate packet and send
 				self.state = 1
-				self.packet = Packet(self.id, destination, random.randint(160,524280))
+				self.packet = Packet(self.ID, destination, random.randint(160,524280))
 				self.bitsRemaining = self.packet.size
 
 		if self.state == 1: #transmitting, subtracts from bits remaining
 			self.bitsRemaining -= time * self.throughput
 
-			if bitsRemaining <= 0: #done transmitting
+			if self.bitsRemaining <= 0: #done transmitting
 				self.state = 0
 				self.packet.delay += self.packet.size/self.throughput #add transmission time
 				self.router.enqueue(self.packet) #pushed to router
 				self.bitsRemaining = 0
 				self.packet = None
 
-	def poll(): #return remaining time for event
-		if bitsRemaining != 0 and self.throughput != 0: #how much time left to finish transmission
+	def poll(self): #return remaining time for event
+		if self.bitsRemaining != 0 and self.throughput != 0: #how much time left to finish transmission
 			return self.bitsRemaining / self.throughput
 		else: #don't pick this event as taking minimum time because there's nothing going on here
 			return 1e100
@@ -73,9 +73,8 @@ class Router(Thing):
 		self.currentPacket = None
 		Thing.__init__(self)
 
-	def connect(self, router2, throughput): #Forms a link/edge between two routers, can add more stuff later
-		link = Link.__init__(self, router2, throughput)
-		self.linkList[link] = (throughput)
+	def connect(self, router2, throughput): #Forms a link/edge between two routers by adding neighbor:throughput to both linkLists
+		self.linkList[router2] = (throughput)
 		router2.linkList[self] = (throughput)
 
 	def getNeighbors(self):
@@ -97,12 +96,12 @@ class Router(Thing):
 		self.queue.push(packet)
 
 	def connected(self):
-		return len(self.links.keys()) > 0
+		return len(self.linkList.keys()) > 0
 
 	def numConnects(self):
-		return len(self.links.keys())
+		return len(self.linkList.keys())
 
-	def time_pass(self, time):
+	def timePass(self, time):
 		if self.state == 0: #free
 			self.currentPacket = self.queue.pop()
 			if self.currentPacket: #packet actually exists and got dequeued
@@ -111,7 +110,7 @@ class Router(Thing):
 				dest = packet.destID
 
 				for device,throughput in self.devices: 
-					if device.id == dest: #if the destination device is connected to router
+					if device.ID == dest: #if the destination device is connected to router
 						self.target = dest
 						self.linkThroughput = throughput
 
@@ -134,7 +133,7 @@ class Router(Thing):
 		if self.state == 1: #transmitting
 			self.bitsRemaining -= time * self.throughput #actually transmit
 			
-			if bitsRemaining <= 0: #done transmitting, reset everything
+			if self.bitsRemaining <= 0: #done transmitting, reset everything
 				self.state = 0
 				self.currentPacket.delay += self.currentPacket.size/self.throughput #add transmission time
 				if type(self.target) == Router:
@@ -147,8 +146,8 @@ class Router(Thing):
 				self.bitsRemaining = 0
 				self.currentPacket = None
 
-	def poll(): #return remaining time for event
-		if bitsRemaining != 0 and self.throughput != 0: #how much time left to finish transmission
+	def poll(self): #return remaining time for event
+		if self.bitsRemaining != 0 and self.throughput != 0: #how much time left to finish transmission
 			return self.bitsRemaining / self.linkThroughput
 		else: #don't pick this event as taking minimum time because there's nothing going on here
 			return 1e100
