@@ -9,7 +9,7 @@ class Setup:
     	self.makeConnections(lowerConnect, upperConnect)
 
     def pickDevice(self):
-        
+    	''' I believe picking the device to send to is handled by Q-values in the timePass method of routers'''        
 
     def initNodes(self, numDevices, numNodes): #creates routers and devices
     	self.networkMap = {"Device": {}, "Router": {}}
@@ -56,18 +56,36 @@ class Setup:
 
 
     def simulate(self, time):
+    	''' I don't think this part is required since nodes automatically transmit with some probability when they are idle
     	# check all devices if they want to transmit
     	for i in range(self.numDevices):
-            self.networkMap["Device"][i].transmit
-    		
-    	# find shortest action
-   		# fast forward time
-   		# check if any packets made it to destination
-   		# repeat until time is up 
+            self.networkMap["Device"][i].transmit '''
+        requestedRuntime = time
 
+    	while time >0:	
+	    	# find shortest action
+	    	minTime = 1e100
+	    	for i in range(self.numDevices):
+	    		time = self.networkMap["Device"][i].poll()
+	    		if time < minTime:
+	    			minTime = time
+	    	for i in range(self.numNodes):
+	    		time = self.networkMap["Router"][i].poll()
+	    		if time < minTime:
+	    			minTime = time
+	   		# fast forward time
+	   		for i in range(self.numDevices):
+	    		self.networkMap["Device"][i].timePass(minTime)
+	    	for i in range(self.numNodes):
+	    		self.networkMap["Router"][i].timePass(minTime)
+	    	''' I believe this part is done in the timePass methods
+	   		# check if any packets made it to destination
+	   		'''
+	   		time -= minTime
+   			# repeat until time is up or becomes negative
 
-
-
+   		timeElapsed = requestedRuntime - time
+   		return timeElapsed #can return more information as needed later
 
 
 
