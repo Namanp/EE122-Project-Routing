@@ -80,8 +80,16 @@ class Setup:
 		timeElapsed = requestedRuntime - time
 		return timeElapsed #can return more information as needed later
 
+	def getCompleted(self):
+		for device in self.networkMap["Device"]:
+			print(device.ID)
+			print(device.completed)
+
 
 s = Setup(3, 7)
-s.simulate(10e6)
+s.simulate(10e10)
+s.getCompleted()
+
+
         
 

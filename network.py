@@ -42,6 +42,7 @@ class Device(Thing):
 				self.state = 0
 				self.packet.delay += self.packet.size/self.throughput #add transmission time
 				self.router.enqueue(self.packet) #pushed to router
+				print("Success")
 				self.bitsRemaining = 0
 				self.packet = None
 
@@ -153,7 +154,7 @@ class Router(Thing):
 		if self.bitsRemaining != 0 and self.throughput != 0: #how much time left to finish transmission
 			return self.bitsRemaining / self.linkThroughput
 		else: #don't pick this event as taking minimum time because there's nothing going on here
-			return 1e100
+			return 1e2
 
 class Packet:
 	def __init__(self, source, destination, size):
