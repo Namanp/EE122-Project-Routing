@@ -61,21 +61,25 @@ class Setup:
 			# find shortest action
 			minTime = 1e100
 			for i in range(self.numDevices):
-				time = self.networkMap["Device"][i].poll()
-				if time < minTime:
-					minTime = time
+				pollTime = self.networkMap["Device"][i].poll()
+				if pollTime < minTime:
+					minTime = pollTime
 			for i in range(self.numNodes):
-				time = self.networkMap["Router"][i].poll()
-				if time < minTime:
-					minTime = time
+				pollTime = self.networkMap["Router"][i].poll()
+				if pollTime < minTime:
+					minTime = pollTime
 			# fast forward time
+			print("minTime", minTime)
 			for i in range(self.numDevices):
 				currDevice = self.networkMap["Device"][i]
 				dest = self.pickDevice(currDevice)
 				currDevice.timePass(minTime, dest)
 			for i in range(self.numNodes):
 				self.networkMap["Router"][i].timePass(minTime)
+			print("minTime right before", minTime)
+			print("time right before", time)
 			time -= minTime
+			print("time after", time)
 			# repeat until time is up or becomes negative
 		timeElapsed = requestedRuntime - time
 		return timeElapsed #can return more information as needed later
@@ -87,7 +91,7 @@ class Setup:
 
 
 s = Setup(3, 7)
-s.simulate(10e10)
+s.simulate(10e3)
 s.getCompleted()
 
 

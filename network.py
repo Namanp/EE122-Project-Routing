@@ -36,6 +36,8 @@ class Device(Thing):
 				self.bitsRemaining = self.packet.size
 
 		if self.state == 1: #transmitting, subtracts from bits remaining
+			print("time", time)
+			print("throughput", self.throughput)
 			self.bitsRemaining -= time * self.throughput
 
 			if self.bitsRemaining <= 0: #done transmitting
@@ -109,6 +111,7 @@ class Router(Thing):
 		if self.state == 0 and not self.isEmpty(): #free and has packets
 			self.currentPacket = self.queue.pop()
 			if self.currentPacket: #packet actually exists and got dequeued
+				print("Got to router")
 				self.state = 1 #busy
 				self.bitsRemaining = self.currentPacket.size
 				dest = self.currentPacket.destID
@@ -154,7 +157,7 @@ class Router(Thing):
 		if self.bitsRemaining != 0 and self.throughput != 0: #how much time left to finish transmission
 			return self.bitsRemaining / self.linkThroughput
 		else: #don't pick this event as taking minimum time because there's nothing going on here
-			return 1e2
+			return 1
 
 class Packet:
 	def __init__(self, source, destination, size):
