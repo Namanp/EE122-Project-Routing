@@ -39,18 +39,19 @@ class Device(Thing):
 			self.bitsRemaining -= time * self.throughput
 
 			if self.bitsRemaining <= 0: #done transmitting
-				self.state = 0
+				self.state = 0 #become idle
 				self.packet.delay += self.packet.size/self.throughput #add transmission time
+				self.packet.path += [self.router.ID] #add router to path
 				self.router.enqueue(self.packet) #pushed to router
 				print("Success")
 				self.bitsRemaining = 0
 				self.packet = None
 
 	def poll(self): #return remaining time for event
-		if self.bitsRemaining != 0 and self.throughput != 0: #how much time left to finish transmission
-			return self.bitsRemaining / self.throughput
+		if self.bitsRemaining > 0 and self.throughput != 0: #how much time left to finish transmission
+			return max(0.01, self.bitsRemaining / self.throughput)
 		else: #don't pick this event as taking minimum time because there's nothing going on here
-			return 1e100
+			return 1
 
 	def receive(self, packet):
 		src = packet.srcID
@@ -62,7 +63,7 @@ class Device(Thing):
 class Router(Thing):
 	alpha = 0.1
 	def __init__(self):
-		self.linkList = {} #dictionary of neighbors and the links to them
+		self.linkList = {} #dictionary of neighboring routers and throughputs to them
 		self.qValues = util.Counter()
 		self.queue = util.Queue()
 		self.devices = {}
@@ -78,17 +79,24 @@ class Router(Thing):
 		self.linkList[router2] = throughput
 		router2.linkList[self] = throughput
 
-	def getNeighbors(self):
-		return self.linkList.keys()
+	def getNeighbors(self, packet=None):
+		if packet:
+			neighbors = self.linkList.keys()
+			for n in neighbors:
+				if n.ID in packet.path:
+					neighbors.remove(n)
+			return neighbors
+		else:
+			return self.linkList.keys()
 
 	def minQValue(self, dest): #used in updating Q-values
 		neighbors = self.getNeighbors()
-		return min([self.qValues[(dest, neighbor)] for neighbor in neighbors])
+		return min([self.qValues[(dest, neighbor.ID)] for neighbor in neighbors])
 
 	def qUpdate(self, nextLink, dest):
 		nextQ = nextLink.minQValue(dest) #gets t, the min Q-value from neighbor
-		diff = (nextQ) - self.qValues[(dest, nextLink)] #can add queueing time here
-		self.qValues[(dest,nextLink)] += Router.alpha * diff
+		diff = (nextQ) - self.qValues[(dest, nextLink.ID)] #can add queueing time here
+		self.qValues[(dest,nextLink.ID)] += Router.alpha * diff
 
 	def sendToDevice(self, packet):
 		return packet.dest.receive(packet)
@@ -106,6 +114,7 @@ class Router(Thing):
 		return len(self.linkList.keys())
 
 	def timePass(self, time):
+		print(self.state)
 		if self.state == 0 and not self.isEmpty(): #free and has packets
 			self.currentPacket = self.queue.pop()
 			if self.currentPacket: #packet actually exists and got dequeued
@@ -123,12 +132,13 @@ class Router(Thing):
 				if self.target == None: #if we have to forward to a different router
 					minQ = 1e100
 					minLink = None
-					for neighbor in self.getNeighbors(): #finds minimum Q-value neighbor
-						nextQ = self.qValues[(dest, neighbor)]
+					#finds minimum Q-value neighbor that the packet has not already visited
+					for neighbor in self.getNeighbors(self.currentPacket): 
+						nextQ = self.qValues[(dest, neighbor.ID)]
 						if nextQ <= minQ:
 							minQ = nextQ
 							minLink = neighbor
-					if minLink != None: #set up to transmit to neighbor router
+					if minLink != None: #set up to transmit to neighboring router
 						print("transmitting")
 						self.target = minLink
 						self.throughput = self.linkList[minLink]
@@ -143,6 +153,7 @@ class Router(Thing):
 			if self.bitsRemaining <= 0: #done transmitting, reset everything
 				self.state = 0
 				self.currentPacket.delay += self.currentPacket.size/self.linkThroughput #add transmission time
+				self.currentPacket.path += [self.target]
 				if isinstance(self.target,Router):
 					self.target.enqueue(self.currentPacket) #puts packet in next router's queue
 					self.qUpdate(minLink, dest) #updates Q value based on the neighbor
@@ -155,8 +166,8 @@ class Router(Thing):
 				self.currentPacket = None
 
 	def poll(self): #return remaining time for event
-		if self.bitsRemaining != 0 and self.linkThroughput != 0: #how much time left to finish transmission
-			return self.bitsRemaining / self.linkThroughput
+		if self.bitsRemaining > 0 and self.linkThroughput != 0: #how much time left to finish transmission
+			return max(1, self.bitsRemaining / self.linkThroughput)
 		else: #don't pick this event as taking minimum time because there's nothing going on here
 			return 1
 
@@ -166,4 +177,5 @@ class Packet:
 		self.destID = destination
 		self.size = size
 		self.delay = 0
+		self.path = [source]
 		

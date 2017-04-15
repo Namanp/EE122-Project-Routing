@@ -2,11 +2,22 @@ import network
 import random
 
 class Setup:
-	def __init__(self, numDevices, numNodes): #makes nodes and connections between them
-		self.numDevices = numDevices
-		self.numNodes = numNodes
-		self.initNodes(numDevices, numNodes)
-		self.makeConnections()
+	def __init__(self, numDevices, numNodes, random=True): #makes nodes and connections between them
+		if random:
+			self.numDevices = numDevices
+			self.numNodes = numNodes
+			self.initNodes(numDevices, numNodes)
+			self.makeConnections()
+		else: #for testing
+			self.manual()
+
+	def manual(self):
+		self.numDevices = 2
+		self.numNodes = 2
+		self.initNodes(2,2)
+		self.genLink(self.networkMap["Device"][0], self.networkMap["Router"][0])
+		self.genLink(self.networkMap["Device"][1], self.networkMap["Router"][1])
+		self.genLink(self.networkMap["Router"][0], self.networkMap["Router"][1])
 
 	def initNodes(self, numDevices, numNodes): #creates routers and devices
 		self.networkMap = {"Device": [], "Router": []}
@@ -96,7 +107,7 @@ class Setup:
 			for i in range(self.numNodes):
 				self.networkMap["Router"][i].timePass(minTime)
 			time -= minTime
-			print("time", time)
+			print("minTime", minTime)
 			# repeat until time is up or becomes negative
 		timeElapsed = requestedRuntime - time
 		return timeElapsed #can return more information as needed later
@@ -107,9 +118,9 @@ class Setup:
 			print(device.completed)
 
 
-s = Setup(2, 2)
-# s.getMap()
-s.simulate(10e2)
+s = Setup(2, 1, False)
+s.getMap()
+s.simulate(10e1)
 s.getCompleted()
 
 
