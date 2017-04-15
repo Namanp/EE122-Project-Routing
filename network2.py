@@ -90,12 +90,19 @@ class Device(Router):
 		return self.state == 0
 
 	def pickDevice(self, numDevices):
-		a = 
+		# pick a random device to transmit to that is not the current device
+
 
 	def transmit(self, numDevices):
-		if self.state == 0 and random.random() < 0.5::
-			packet = self.genPacket(device)
-			self.enqueue(packet)
+		if self.state == 0 and random.random() < 0.5:
+			# pick Device
+			self.state = 1
+			self.target = # random neighbor
+			self.currThroughput = 0 # throughput of random neighbor
+			self.bitsRemaining = 0
+			self.currentPacket = None
+
+			
 
 class Packet:
 

@@ -27,7 +27,7 @@ class Setup:
 		node1.connect(node2, throughput)
 
 	def makeConnections(self): #should randomly create connections between the current devices and routers
-		upperBound = int(self.numNodes * 0.75)
+		upperBound = max([1, int(self.numNodes * 0.75)])
 		for i in range(self.numDevices + self.numNodes):
 			#find the thing
 			if i < self.numDevices:
@@ -39,6 +39,7 @@ class Setup:
 			#add connections depending on if it's a router or device
 			if isRouter: #connect router to random number of other routers
 				currConn = currNode.numConnects()
+				print("upperBound", upperBound)
 				numConn = random.randint(1, upperBound)
 				newConn = numConn - currConn
 				if newConn > 0:
@@ -55,6 +56,25 @@ class Setup:
 		deviceList.remove(currDevice)
 		return random.sample(deviceList, 1)[0]
 
+	def getMap(self):
+		for i in range(self.numDevices + self.numNodes):
+			#find the thing
+			if i < self.numDevices:
+				currNode = self.networkMap["Device"][i]
+				isRouter = False
+			else:
+				currNode = self.networkMap["Router"][i - self.numDevices]
+				isRouter = True
+			#add connections depending on if it's a router or device
+			if isRouter: #connect router to random number of other routers
+				print("router id", currNode.ID)
+				print("devices", currNode.devices)
+				print("routers", currNode.linkList)
+			else: #connect device to router
+				print("device id", currNode.ID)
+				print("router", currNode.router)
+
+
 	def simulate(self, time):
 		requestedRuntime = time
 		while time > 0:	
@@ -69,17 +89,14 @@ class Setup:
 				if pollTime < minTime:
 					minTime = pollTime
 			# fast forward time
-			print("minTime", minTime)
 			for i in range(self.numDevices):
 				currDevice = self.networkMap["Device"][i]
 				dest = self.pickDevice(currDevice)
 				currDevice.timePass(minTime, dest)
 			for i in range(self.numNodes):
 				self.networkMap["Router"][i].timePass(minTime)
-			print("minTime right before", minTime)
-			print("time right before", time)
 			time -= minTime
-			print("time after", time)
+			print("time", time)
 			# repeat until time is up or becomes negative
 		timeElapsed = requestedRuntime - time
 		return timeElapsed #can return more information as needed later
@@ -90,8 +107,9 @@ class Setup:
 			print(device.completed)
 
 
-s = Setup(3, 7)
-s.simulate(10e3)
+s = Setup(2, 2)
+# s.getMap()
+s.simulate(10e2)
 s.getCompleted()
 
 

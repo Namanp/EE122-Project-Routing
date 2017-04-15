@@ -32,12 +32,10 @@ class Device(Thing):
 		if self.router and self.state == 0: #free and connected to internet
 			if random.random() < 0.5: #with 50% probability, generate packet and send
 				self.state = 1
-				self.packet = Packet(self.ID, destination, random.randint(160,524280))
+				self.packet = Packet(self.ID, destination.ID, random.randint(160,524280))
 				self.bitsRemaining = self.packet.size
 
 		if self.state == 1: #transmitting, subtracts from bits remaining
-			print("time", time)
-			print("throughput", self.throughput)
 			self.bitsRemaining -= time * self.throughput
 
 			if self.bitsRemaining <= 0: #done transmitting
@@ -55,7 +53,7 @@ class Device(Thing):
 			return 1e100
 
 	def receive(self, packet):
-		src = packet.src
+		src = packet.srcID
 		if src in self.completed:
 			self.completed[src].append([packet.size, packet.delay])
 		else:
@@ -115,10 +113,11 @@ class Router(Thing):
 				self.state = 1 #busy
 				self.bitsRemaining = self.currentPacket.size
 				dest = self.currentPacket.destID
+				print("dest", dest)
 
 				for device,throughput in self.devices.items(): 
 					if device.ID == dest: #if the destination device is connected to router
-						self.target = dest
+						self.target = device
 						self.linkThroughput = throughput
 
 				if self.target == None: #if we have to forward to a different router
@@ -130,6 +129,7 @@ class Router(Thing):
 							minQ = nextQ
 							minLink = neighbor
 					if minLink != None: #set up to transmit to neighbor router
+						print("transmitting")
 						self.target = minLink
 						self.throughput = self.linkList[minLink]
 					else: #no neighbors, reset state and discard packet
@@ -138,15 +138,16 @@ class Router(Thing):
 						self.bitsRemaining = 0
 
 		if self.state == 1: #transmitting
-			self.bitsRemaining -= time * self.throughput #actually transmit
+			self.bitsRemaining -= time * self.linkThroughput #actually transmit
 			
 			if self.bitsRemaining <= 0: #done transmitting, reset everything
 				self.state = 0
-				self.currentPacket.delay += self.currentPacket.size/self.throughput #add transmission time
+				self.currentPacket.delay += self.currentPacket.size/self.linkThroughput #add transmission time
 				if isinstance(self.target,Router):
 					self.target.enqueue(self.currentPacket) #puts packet in next router's queue
 					self.qUpdate(minLink, dest) #updates Q value based on the neighbor
 				else: #target is a device/destination
+					print("made it!!!")
 					self.target.receive(self.currentPacket)
 				self.target = None
 				self.throughput = 0
@@ -154,7 +155,7 @@ class Router(Thing):
 				self.currentPacket = None
 
 	def poll(self): #return remaining time for event
-		if self.bitsRemaining != 0 and self.throughput != 0: #how much time left to finish transmission
+		if self.bitsRemaining != 0 and self.linkThroughput != 0: #how much time left to finish transmission
 			return self.bitsRemaining / self.linkThroughput
 		else: #don't pick this event as taking minimum time because there's nothing going on here
 			return 1
