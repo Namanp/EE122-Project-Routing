@@ -3,22 +3,39 @@ import random
 import copy
 
 class Setup:
-	def __init__(self, numDevices, numNodes, random=True): #makes nodes and connections between them
-		if random:
+	def __init__(self, numDevices, numNodes, configuration=0): #makes nodes and connections between them
+		if not random:
 			self.numDevices = numDevices
 			self.numNodes = numNodes
 			self.initNodes(numDevices, numNodes)
 			self.makeConnections()
 		else: #for testing
-			self.manual()
+			self.manual(configuration)
 
-	def manual(self):
-		self.numDevices = 2
-		self.numNodes = 2
-		self.initNodes(2,2)
-		self.genLink(self.networkMap["Device"][0], self.networkMap["Router"][0])
-		self.genLink(self.networkMap["Device"][1], self.networkMap["Router"][1])
-		self.genLink(self.networkMap["Router"][0], self.networkMap["Router"][1])
+	def manual(self, configuration):
+		if configuration == "Simple":
+			self.numDevices = 2
+			self.numNodes = 2
+			self.initNodes(2,2)
+			self.genLink(self.networkMap["Device"][0], self.networkMap["Router"][0])
+			self.genLink(self.networkMap["Device"][1], self.networkMap["Router"][1])
+			self.genLink(self.networkMap["Router"][0], self.networkMap["Router"][1])
+		elif configuration == "Diamond":
+			self.numDevices = 5
+			self.numNodes = 4
+			self.initNodes(5,4)
+			self.genLink(self.networkMap["Device"][0], self.networkMap["Router"][3])
+			self.genLink(self.networkMap["Device"][1], self.networkMap["Router"][0])
+			self.genLink(self.networkMap["Device"][2], self.networkMap["Router"][2])
+			self.genLink(self.networkMap["Device"][3], self.networkMap["Router"][0])
+			self.genLink(self.networkMap["Device"][4], self.networkMap["Router"][1])
+			self.genLink(self.networkMap["Router"][0], self.networkMap["Router"][1])
+			self.genLink(self.networkMap["Router"][0], self.networkMap["Router"][2])
+			self.genLink(self.networkMap["Router"][1], self.networkMap["Router"][2])
+			self.genLink(self.networkMap["Router"][1], self.networkMap["Router"][3])
+			self.genLink(self.networkMap["Router"][2], self.networkMap["Router"][3])
+		else:
+			return
 		for dev in self.networkMap["Device"]:
 			dev.dijikstra()
 
@@ -140,7 +157,7 @@ class Setup:
 		path = dev.findPath(self.networkMap["Device"][3])
 		print(path)
 
-s = Setup(5, 4)
+s = Setup(5, 4, "Diamond") #Simple or Diamond
 s.getMap()
 # s.testD()
 sCopy = copy.deepcopy(s)
