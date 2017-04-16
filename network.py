@@ -37,14 +37,16 @@ class Device(Thing):
 
 		if self.state == 1: #transmitting, subtracts from bits remaining
 			self.bitsRemaining -= time * self.throughput
+			#self.bitsRemaining = max(0, self.bitsRemaining)
 
 			if self.bitsRemaining <= 0: #done transmitting
 				self.state = 0 #become idle
 				self.packet.delay += self.packet.size/self.throughput #add transmission time
 				self.packet.path += [self.router.ID] #add router to path
 				self.router.enqueue(self.packet) #pushed to router
-				print("Success")
+				#print("Success")
 				self.bitsRemaining = 0
+				#print("dev state", self.ID, self.state, self.bitsRemaining)
 				self.packet = None
 
 	def poll(self): #return remaining time for event
@@ -70,6 +72,7 @@ class Router(Thing):
 		#The following are for time_pass
 		self.state = 0 #0 is free, 1 is busy
 		self.target = None
+		self.minLink = None
 		self.linkThroughput = 0
 		self.bitsRemaining = 0
 		self.currentPacket = None
@@ -81,7 +84,7 @@ class Router(Thing):
 
 	def getNeighbors(self, packet=None):
 		if packet:
-			neighbors = self.linkList.keys()
+			neighbors = list(self.linkList.keys())
 			for n in neighbors:
 				if n.ID in packet.path:
 					neighbors.remove(n)
@@ -93,10 +96,10 @@ class Router(Thing):
 		neighbors = self.getNeighbors()
 		return min([self.qValues[(dest, neighbor.ID)] for neighbor in neighbors])
 
-	def qUpdate(self, nextLink, dest):
-		nextQ = nextLink.minQValue(dest) #gets t, the min Q-value from neighbor
-		diff = (nextQ) - self.qValues[(dest, nextLink.ID)] #can add queueing time here
-		self.qValues[(dest,nextLink.ID)] += Router.alpha * diff
+	def qUpdate(self, nextLink, packet):
+		nextQ = nextLink.minQValue(packet.destID) #gets t, the min Q-value from neighbor
+		diff = (nextQ + packet.transmissionDelay + packet.qDelay) - self.qValues[(packet.destID, nextLink.ID)]
+		self.qValues[(packet.destID,nextLink.ID)] += Router.alpha * diff
 
 	def sendToDevice(self, packet):
 		return packet.dest.receive(packet)
@@ -114,15 +117,15 @@ class Router(Thing):
 		return len(self.linkList.keys())
 
 	def timePass(self, time):
-		print(self.state)
 		if self.state == 0 and not self.isEmpty(): #free and has packets
+			#print("DEQUEUEING")
 			self.currentPacket = self.queue.pop()
 			if self.currentPacket: #packet actually exists and got dequeued
-				print("Got to router")
+				#print("Got to router")
 				self.state = 1 #busy
 				self.bitsRemaining = self.currentPacket.size
 				dest = self.currentPacket.destID
-				print("dest", dest)
+				#print("dest", dest)
 
 				for device,throughput in self.devices.items(): 
 					if device.ID == dest: #if the destination device is connected to router
@@ -131,34 +134,45 @@ class Router(Thing):
 
 				if self.target == None: #if we have to forward to a different router
 					minQ = 1e100
-					minLink = None
+					self.minLink = None
 					#finds minimum Q-value neighbor that the packet has not already visited
 					for neighbor in self.getNeighbors(self.currentPacket): 
 						nextQ = self.qValues[(dest, neighbor.ID)]
 						if nextQ <= minQ:
 							minQ = nextQ
-							minLink = neighbor
-					if minLink != None: #set up to transmit to neighboring router
-						print("transmitting")
-						self.target = minLink
-						self.throughput = self.linkList[minLink]
+							self.minLink = neighbor
+					if self.minLink != None: #set up to transmit to neighboring router
+						#print("transmitting")
+						self.target = self.minLink
+						self.linkThroughput = self.linkList[self.minLink]
 					else: #no neighbors, reset state and discard packet
 						self.state = 0
 						self.packet = None
 						self.bitsRemaining = 0
 
 		if self.state == 1: #transmitting
+			#print("before", self.bitsRemaining, time)
 			self.bitsRemaining -= time * self.linkThroughput #actually transmit
+			#print("after", self.bitsRemaining)
+			#self.bitsRemaining = max(0, self.bitsRemaining)
 			
 			if self.bitsRemaining <= 0: #done transmitting, reset everything
+				#print("forwarding")
 				self.state = 0
-				self.currentPacket.delay += self.currentPacket.size/self.linkThroughput #add transmission time
+
+				transmissionTime = self.currentPacket.size/self.linkThroughput
+				self.currentPacket.delay += transmissionTime #add transmission time
+				self.currentPacket.transmissionDelay += transmissionTime
+				self.queue.updateAll(transmissionTime)
+
 				self.currentPacket.path += [self.target]
-				if isinstance(self.target,Router):
+				if isinstance(self.target, Router):
+					self.qUpdate(self.minLink, self.currentPacket) #updates Q value based on the neighbor
+					self.currentPacket.transmissionDelay = 0
+					self.currentPacket.qDelay = 0
 					self.target.enqueue(self.currentPacket) #puts packet in next router's queue
-					self.qUpdate(minLink, dest) #updates Q value based on the neighbor
 				else: #target is a device/destination
-					print("made it!!!")
+					#print("made it!!!")
 					self.target.receive(self.currentPacket)
 				self.target = None
 				self.throughput = 0
@@ -178,4 +192,6 @@ class Packet:
 		self.size = size
 		self.delay = 0
 		self.path = [source]
+		self.qDelay = 0
+		self.transmissionDelay = 0
 		

@@ -50,11 +50,15 @@ class Setup:
 			#add connections depending on if it's a router or device
 			if isRouter: #connect router to random number of other routers
 				currConn = currNode.numConnects()
-				print("upperBound", upperBound)
+				print(currNode.ID, currConn)
+				#print("upperBound", upperBound)
 				numConn = random.randint(1, upperBound)
 				newConn = numConn - currConn
 				if newConn > 0:
-					newNodes = random.sample(self.networkMap["Router"], newConn)
+					copy = list(self.networkMap["Router"])
+					copy.remove(currNode)
+					print(copy)
+					newNodes = random.sample(copy, newConn)
 					for newNode in newNodes:
 						self.genLink(currNode, newNode)
 			else: #connect device to router
@@ -62,7 +66,7 @@ class Setup:
 					newNode = random.sample(self.networkMap["Router"], 1)
 					self.genLink(currNode,newNode[0])
 
-	def pickDevice(self,currDevice): #return a destination for a new packet
+	def pickDevice(self, currDevice): #return a destination for a new packet
 		deviceList = list(self.networkMap["Device"])
 		deviceList.remove(currDevice)
 		return random.sample(deviceList, 1)[0]
@@ -78,12 +82,12 @@ class Setup:
 				isRouter = True
 			#add connections depending on if it's a router or device
 			if isRouter: #connect router to random number of other routers
-				print("router id", currNode.ID)
-				print("devices", currNode.devices)
-				print("routers", currNode.linkList)
+				print("router", currNode.ID)
+				print("devices", [device.ID for device in currNode.devices.keys()])
+				print("routers", [router.ID for router in currNode.linkList.keys()])
 			else: #connect device to router
 				print("device id", currNode.ID)
-				print("router", currNode.router)
+				print("router", currNode.router.ID)
 
 
 	def simulate(self, time):
@@ -107,7 +111,7 @@ class Setup:
 			for i in range(self.numNodes):
 				self.networkMap["Router"][i].timePass(minTime)
 			time -= minTime
-			print("minTime", minTime)
+			#print("minTime", minTime)
 			# repeat until time is up or becomes negative
 		timeElapsed = requestedRuntime - time
 		return timeElapsed #can return more information as needed later
@@ -118,7 +122,7 @@ class Setup:
 			print(device.completed)
 
 
-s = Setup(2, 1, False)
+s = Setup(50, 10, False)
 s.getMap()
 s.simulate(10e1)
 s.getCompleted()

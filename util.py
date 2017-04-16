@@ -134,3 +134,7 @@ class Queue:
     def isEmpty(self):
         "Returns true if the queue is empty"
         return len(self.list) == 0
+
+    def updateAll(self, time):
+        for packet in self.list:
+            packet.qDelay += time
