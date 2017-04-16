@@ -1,5 +1,6 @@
 import network
 import random
+import copy
 
 class Setup:
 	def __init__(self, numDevices, numNodes, random=True): #makes nodes and connections between them
@@ -18,6 +19,8 @@ class Setup:
 		self.genLink(self.networkMap["Device"][0], self.networkMap["Router"][0])
 		self.genLink(self.networkMap["Device"][1], self.networkMap["Router"][1])
 		self.genLink(self.networkMap["Router"][0], self.networkMap["Router"][1])
+		for dev in self.networkMap["Device"]:
+			dev.dijikstra()
 
 	def initNodes(self, numDevices, numNodes): #creates routers and devices
 		self.networkMap = {"Device": [], "Router": []}
@@ -66,10 +69,20 @@ class Setup:
 					newNode = random.sample(self.networkMap["Router"], 1)
 					self.genLink(currNode,newNode[0])
 
+		for dev in self.networkMap["Device"]:
+			dev.dijikstra()
+
 	def pickDevice(self, currDevice): #return a destination for a new packet
 		deviceList = list(self.networkMap["Device"])
 		deviceList.remove(currDevice)
 		return random.sample(deviceList, 1)[0]
+
+	def allEmpty(self):
+		for router in self.networkMap["Router"]:
+			if not router.isEmpty():
+				print("Failure")
+				return
+		print("Success")
 
 	def getMap(self):
 		for i in range(self.numDevices + self.numNodes):
@@ -90,7 +103,7 @@ class Setup:
 				print("router", currNode.router.ID)
 
 
-	def simulate(self, time):
+	def simulate(self, time, protocol):
 		requestedRuntime = time
 		while time > 0:	
 			# find shortest action
@@ -107,9 +120,9 @@ class Setup:
 			for i in range(self.numDevices):
 				currDevice = self.networkMap["Device"][i]
 				dest = self.pickDevice(currDevice)
-				currDevice.timePass(minTime, dest)
+				currDevice.timePass(minTime, dest, protocol)
 			for i in range(self.numNodes):
-				self.networkMap["Router"][i].timePass(minTime)
+				self.networkMap["Router"][i].timePass(minTime, protocol)
 			time -= minTime
 			#print("minTime", minTime)
 			# repeat until time is up or becomes negative
@@ -121,12 +134,20 @@ class Setup:
 			print(device.ID)
 			print(device.completed)
 
+	def testD(self):
+		dev = self.networkMap["Device"][0]
+		dev.dijikstra()
+		path = dev.findPath(self.networkMap["Device"][3])
+		print(path)
 
-s = Setup(50, 10, False)
+s = Setup(5, 4)
 s.getMap()
-s.simulate(10e1)
+# s.testD()
+sCopy = copy.deepcopy(s)
+s.simulate(10e1, True)
+sCopy.simulate(10e1, False)
+
 s.getCompleted()
-
-
+sCopy.getCompleted()
         
 

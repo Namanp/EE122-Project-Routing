@@ -28,11 +28,15 @@ class Device(Thing):
 	def isConnected(self):
 		return self.connected
 
-	def timePass(self, time, destination): #takes in time and destination ID
+	def getAdjacent(self):
+		return {self.router: self.throughput}
+
+	def timePass(self, time, destination, protocol=True): #takes in time and destination ID, True = Q-value, False = Dijikstra's
 		if self.router and self.state == 0: #free and connected to internet
 			if random.random() < 0.5: #with 50% probability, generate packet and send
 				self.state = 1
-				self.packet = Packet(self.ID, destination.ID, random.randint(160,524280))
+				path = self.findPath(destination)[2:]
+				self.packet = Packet(self.ID, destination.ID, random.randint(160,524280), path)
 				self.bitsRemaining = self.packet.size
 
 		if self.state == 1: #transmitting, subtracts from bits remaining
@@ -48,6 +52,33 @@ class Device(Thing):
 				self.bitsRemaining = 0
 				#print("dev state", self.ID, self.state, self.bitsRemaining)
 				self.packet = None
+
+	def findPath(self, dest):
+		path = [dest.ID]
+		prevNode = self.prev[dest]
+		while prevNode[0] != None:
+			path = [prevNode[0].ID] + path
+			prevNode = self.prev[prevNode[0]]
+		return path
+
+	def dijikstra(self):
+		closed = set()
+		start = self
+		fringe = util.PriorityQueue()
+		fringe.push((start, 0), 0)
+		self.prev = {start: (None, 0)}
+		while not fringe.isEmpty():
+			curr = fringe.pop()
+			node = curr[0]
+			cost = curr[1]
+			closed.add(node.ID) #mark when dequeued, update avoids duplicates
+			for nex, throughput in node.getAdjacent().items():
+				loc = nex.ID
+				if loc not in closed:
+					netCost = cost + (1 / throughput)
+					fringe.update((nex, netCost), netCost)
+					if nex not in self.prev or netCost < self.prev[nex][1]:
+						self.prev[nex] = (node, netCost)
 
 	def poll(self): #return remaining time for event
 		if self.bitsRemaining > 0 and self.throughput != 0: #how much time left to finish transmission
@@ -73,7 +104,7 @@ class Router(Thing):
 		self.state = 0 #0 is free, 1 is busy
 		self.target = None
 		self.minLink = None
-		self.linkThroughput = 0
+		self.throughput = 0
 		self.bitsRemaining = 0
 		self.currentPacket = None
 		Thing.__init__(self)
@@ -81,6 +112,11 @@ class Router(Thing):
 	def connect(self, router2, throughput): #Forms a link/edge between two routers by adding neighbor:throughput to both linkLists
 		self.linkList[router2] = throughput
 		router2.linkList[self] = throughput
+
+	def getAdjacent(self):
+		newDict = dict(self.linkList)
+		newDict.update(self.devices)
+		return newDict
 
 	def getNeighbors(self, packet=None):
 		if packet:
@@ -116,7 +152,7 @@ class Router(Thing):
 	def numConnects(self):
 		return len(self.linkList.keys())
 
-	def timePass(self, time):
+	def timePass(self, time, protocol=True):
 		if self.state == 0 and not self.isEmpty(): #free and has packets
 			#print("DEQUEUEING")
 			self.currentPacket = self.queue.pop()
@@ -130,29 +166,38 @@ class Router(Thing):
 				for device,throughput in self.devices.items(): 
 					if device.ID == dest: #if the destination device is connected to router
 						self.target = device
-						self.linkThroughput = throughput
+						self.throughput = throughput
 
 				if self.target == None: #if we have to forward to a different router
-					minQ = 1e100
-					self.minLink = None
-					#finds minimum Q-value neighbor that the packet has not already visited
-					for neighbor in self.getNeighbors(self.currentPacket): 
-						nextQ = self.qValues[(dest, neighbor.ID)]
-						if nextQ <= minQ:
-							minQ = nextQ
-							self.minLink = neighbor
-					if self.minLink != None: #set up to transmit to neighboring router
-						#print("transmitting")
-						self.target = self.minLink
-						self.linkThroughput = self.linkList[self.minLink]
-					else: #no neighbors, reset state and discard packet
-						self.state = 0
-						self.packet = None
-						self.bitsRemaining = 0
+					if protocol == False:
+						nextID = self.currentPacket.dPath[0]
+						for link in self.linkList:
+							if link.ID == nextID:
+								self.target = link
+								self.throughput = self.linkList[link]
+								break
+						del self.currentPacket.dPath[0]
+					else:
+						minQ = 1e100
+						self.minLink = None
+						#finds minimum Q-value neighbor that the packet has not already visited
+						for neighbor in self.getNeighbors(self.currentPacket): 
+							nextQ = self.qValues[(dest, neighbor.ID)]
+							if nextQ <= minQ:
+								minQ = nextQ
+								self.minLink = neighbor
+						if self.minLink != None: #set up to transmit to neighboring router
+							#print("transmitting")
+							self.target = self.minLink
+							self.throughput = self.linkList[self.minLink]
+						else: #no neighbors, reset state and discard packet
+							self.state = 0
+							self.packet = None
+							self.bitsRemaining = 0
 
 		if self.state == 1: #transmitting
 			#print("before", self.bitsRemaining, time)
-			self.bitsRemaining -= time * self.linkThroughput #actually transmit
+			self.bitsRemaining -= time * self.throughput #actually transmit
 			#print("after", self.bitsRemaining)
 			#self.bitsRemaining = max(0, self.bitsRemaining)
 			
@@ -160,14 +205,15 @@ class Router(Thing):
 				#print("forwarding")
 				self.state = 0
 
-				transmissionTime = self.currentPacket.size/self.linkThroughput
+				transmissionTime = self.currentPacket.size/self.throughput
 				self.currentPacket.delay += transmissionTime #add transmission time
 				self.currentPacket.transmissionDelay += transmissionTime
 				self.queue.updateAll(transmissionTime)
 
 				self.currentPacket.path += [self.target]
 				if isinstance(self.target, Router):
-					self.qUpdate(self.minLink, self.currentPacket) #updates Q value based on the neighbor
+					if protocol:
+						self.qUpdate(self.minLink, self.currentPacket) #updates Q value based on the neighbor
 					self.currentPacket.transmissionDelay = 0
 					self.currentPacket.qDelay = 0
 					self.target.enqueue(self.currentPacket) #puts packet in next router's queue
@@ -180,18 +226,19 @@ class Router(Thing):
 				self.currentPacket = None
 
 	def poll(self): #return remaining time for event
-		if self.bitsRemaining > 0 and self.linkThroughput != 0: #how much time left to finish transmission
-			return max(1, self.bitsRemaining / self.linkThroughput)
+		if self.bitsRemaining > 0 and self.throughput != 0: #how much time left to finish transmission
+			return max(1, self.bitsRemaining / self.throughput)
 		else: #don't pick this event as taking minimum time because there's nothing going on here
 			return 1
 
 class Packet:
-	def __init__(self, source, destination, size):
+	def __init__(self, source, destination, size, pathToTake = []):
 		self.srcID = source
 		self.destID = destination
 		self.size = size
-		self.delay = 0
-		self.path = [source]
-		self.qDelay = 0
-		self.transmissionDelay = 0
+		self.delay = 0 #lifetime delay
+		self.path = [source] #Path in Q-values...
+		self.qDelay = 0 #Delay from queue
+		self.transmissionDelay = 0 #Delay with transmission
+		self.dPath = pathToTake #Dijikstra's path
 		
