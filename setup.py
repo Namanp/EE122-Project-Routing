@@ -34,6 +34,73 @@ class Setup:
 			self.genLink(self.networkMap["Router"][1], self.networkMap["Router"][2])
 			self.genLink(self.networkMap["Router"][1], self.networkMap["Router"][3])
 			self.genLink(self.networkMap["Router"][2], self.networkMap["Router"][3])
+		elif configuration == "6x6":
+			self.numDevices = 36
+			self.numNodes = 36
+			self.initNodes(36,36)
+
+			for i in range(36): #Want to look at devices #30 and #35
+				self.genLink(self.networkMap["Device"][i], self.networkMap["Router"][i])
+
+			self.genLink(self.networkMap["Router"][0], self.networkMap["Router"][1])
+			self.genLink(self.networkMap["Router"][1], self.networkMap["Router"][2])
+			self.genLink(self.networkMap["Router"][2], self.networkMap["Router"][3])
+			self.genLink(self.networkMap["Router"][3], self.networkMap["Router"][4])
+			self.genLink(self.networkMap["Router"][4], self.networkMap["Router"][5])
+
+			self.genLink(self.networkMap["Router"][0], self.networkMap["Router"][6])
+			self.genLink(self.networkMap["Router"][7], self.networkMap["Router"][8])
+			self.genLink(self.networkMap["Router"][9], self.networkMap["Router"][10])
+			self.genLink(self.networkMap["Router"][5], self.networkMap["Router"][11])
+
+			self.genLink(self.networkMap["Router"][6], self.networkMap["Router"][12])
+			self.genLink(self.networkMap["Router"][12], self.networkMap["Router"][13])
+			self.genLink(self.networkMap["Router"][7], self.networkMap["Router"][13])
+			self.genLink(self.networkMap["Router"][8], self.networkMap["Router"][14])
+			self.genLink(self.networkMap["Router"][13], self.networkMap["Router"][14])
+			self.genLink(self.networkMap["Router"][14], self.networkMap["Router"][15])
+			self.genLink(self.networkMap["Router"][9], self.networkMap["Router"][15])
+			self.genLink(self.networkMap["Router"][10], self.networkMap["Router"][16])
+			self.genLink(self.networkMap["Router"][15], self.networkMap["Router"][16])
+			self.genLink(self.networkMap["Router"][16], self.networkMap["Router"][17])
+			self.genLink(self.networkMap["Router"][11], self.networkMap["Router"][17])
+
+			self.genLink(self.networkMap["Router"][12], self.networkMap["Router"][18])
+			self.genLink(self.networkMap["Router"][18], self.networkMap["Router"][19])
+			self.genLink(self.networkMap["Router"][13], self.networkMap["Router"][19])
+			self.genLink(self.networkMap["Router"][19], self.networkMap["Router"][20])
+			self.genLink(self.networkMap["Router"][14], self.networkMap["Router"][20])
+
+			self.genLink(self.networkMap["Router"][15], self.networkMap["Router"][21])
+			self.genLink(self.networkMap["Router"][21], self.networkMap["Router"][22])
+			self.genLink(self.networkMap["Router"][16], self.networkMap["Router"][22])
+			self.genLink(self.networkMap["Router"][22], self.networkMap["Router"][23])
+			self.genLink(self.networkMap["Router"][17], self.networkMap["Router"][23])
+
+			self.genLink(self.networkMap["Router"][18], self.networkMap["Router"][24])
+			self.genLink(self.networkMap["Router"][24], self.networkMap["Router"][25])
+			self.genLink(self.networkMap["Router"][19], self.networkMap["Router"][25])
+			self.genLink(self.networkMap["Router"][25], self.networkMap["Router"][26])
+			self.genLink(self.networkMap["Router"][20], self.networkMap["Router"][26])
+
+			self.genLink(self.networkMap["Router"][21], self.networkMap["Router"][27])
+			self.genLink(self.networkMap["Router"][27], self.networkMap["Router"][28])
+			self.genLink(self.networkMap["Router"][22], self.networkMap["Router"][28])
+			self.genLink(self.networkMap["Router"][28], self.networkMap["Router"][29])
+			self.genLink(self.networkMap["Router"][23], self.networkMap["Router"][29])
+
+			self.genLink(self.networkMap["Router"][24], self.networkMap["Router"][30])
+			self.genLink(self.networkMap["Router"][30], self.networkMap["Router"][31])
+			self.genLink(self.networkMap["Router"][25], self.networkMap["Router"][31])
+			self.genLink(self.networkMap["Router"][31], self.networkMap["Router"][32])
+			self.genLink(self.networkMap["Router"][26], self.networkMap["Router"][32])
+
+			self.genLink(self.networkMap["Router"][27], self.networkMap["Router"][33])
+			self.genLink(self.networkMap["Router"][33], self.networkMap["Router"][34])
+			self.genLink(self.networkMap["Router"][28], self.networkMap["Router"][34])
+			self.genLink(self.networkMap["Router"][34], self.networkMap["Router"][35])
+			self.genLink(self.networkMap["Router"][29], self.networkMap["Router"][35])
+
 		else:
 			return
 		for dev in self.networkMap["Device"]:
@@ -157,7 +224,7 @@ class Setup:
 		path = dev.findPath(self.networkMap["Device"][3])
 		print(path)
 
-s = Setup(5, 4, "Diamond") #Simple or Diamond
+s = Setup(5, 4, "6x6") #Simple, Diamond, or 6x6
 s.getMap()
 # s.testD()
 sCopy = copy.deepcopy(s)
