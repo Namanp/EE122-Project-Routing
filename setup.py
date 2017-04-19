@@ -230,7 +230,11 @@ class Setup:
 			print(device.completed)
 
 	def completeForDevice(self, device1ID, device2ID):
-		return self.networkMap["Device"][device2ID].completed[device1ID]
+		c = self.networkMap["Device"][device2ID].completed
+		if device1ID in c.keys():
+			return c[device1ID]
+		else:
+			return None
 
 	def testD(self):
 		dev = self.networkMap["Device"][0]
@@ -238,8 +242,17 @@ class Setup:
 		path = dev.findPath(self.networkMap["Device"][3])
 		print(path)
 
-	def computeAvg(self, timeLsts):
-		return sum([time[1]/time[0] for time in timeLsts])/len(timeLsts)
+	def computeAvg(self, timeLsts, timeLsts2):
+		a = 0
+		b = 0
+		if timeLsts:
+			a = sum([time[1]/time[0] for time in timeLsts])/len(timeLsts)
+		if timeLsts2:
+			b = sum([time[1]/time[0] for time in timeLsts2])/len(timeLsts2)
+		if not timeLsts and not timeLsts2:
+			return None
+		else:
+			return (a + b)/2 #average the averages
 
 
 s = Setup(5, 4, "6x6") #Simple, Diamond, or 6x6
@@ -249,13 +262,15 @@ sCopy = copy.deepcopy(s)
 avg1 = []
 avg2 = []
 s.simulate(10,False, "6x6")
-for i in range(1):
-	s.simulate(100, True, "6x6")
-	sCopy.simulate(100, False, "6x6")
-	completed1 = s.getCompleted()
-	completed2 = sCopy.getCompleted() 
-	avg1.append(s.computeAvg(completed1))
-	avg2.append(sCopy.computeAvg(completed2))
+for i in range(10):
+	s.simulate(10, True, "6x6")
+	sCopy.simulate(10, False, "6x6")
+	completed1 = s.completeForDevice(15,18)
+	completed11 = s.completeForDevice(18,15)
+	completed2 = sCopy.completeForDevice(15,18)
+	completed22 = sCopy.completeForDevice(18,15)
+	avg1.append(s.computeAvg(completed1, completed11))
+	avg2.append(sCopy.computeAvg(completed2, completed22))
 print("avg1", avg1)
 print("avg2", avg2)
 
