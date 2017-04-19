@@ -192,6 +192,11 @@ class Setup:
 			dev.dijikstra()
 
 	def pickDevice(self, currDevice, shape): #return a destination for a new packet
+		if shape == "4x4":
+			if currDevice.ID == 12:
+				return self.networkMap["Device"][15]
+			if currDevice.ID == 15:
+				return self.networkMap["Device"][12]
 		if shape == "6x6":
 			if currDevice.ID == 15:
 				return self.networkMap["Device"][18]
@@ -295,18 +300,18 @@ s = Setup(5, 4, "6x6") #Simple, Diamond, or 6x6
 sCopy = copy.deepcopy(s)
 avg1 = []
 avg2 = []
-s.simulate(10,False, "4x4")
-for i in range(10):
-	s.simulate(10, True, "4x4")
-	sCopy.simulate(10, False, "4x4")
-	s.getCompleted()
-	sCopy.getCompleted()
-	# completed1 = s.completeForDevice(15,18)
-	# completed11 = s.completeForDevice(18,15)
-	# completed2 = sCopy.completeForDevice(15,18)
-	# completed22 = sCopy.completeForDevice(18,15)
-	# avg1.append(s.computeAvg(completed1, completed11))
-	# avg2.append(sCopy.computeAvg(completed2, completed22))
+s.simulate(100,False, "4x4")
+for i in range(1000):
+	s.simulate(1, True, "4x4")
+	sCopy.simulate(1, False, "4x4")
+	# s.getCompleted()
+	# sCopy.getCompleted()
+	completed1 = s.completeForDevice(12,15)
+	completed11 = s.completeForDevice(15,12)
+	completed2 = sCopy.completeForDevice(12,15)
+	completed22 = sCopy.completeForDevice(15,12)
+	avg1.append(s.computeAvg(completed1, completed11))
+	avg2.append(sCopy.computeAvg(completed2, completed22))
 print("avg1", avg1)
 print("avg2", avg2)
 

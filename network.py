@@ -94,7 +94,7 @@ class Device(Thing):
 			self.completed[src] = [[packet.size, packet.delay]]
 
 class Router(Thing):
-	alpha = 0.66
+	alpha = 0.8
 	def __init__(self):
 		self.linkList = {} #dictionary of neighboring routers and throughputs to them
 		self.qValues = util.Counter()
