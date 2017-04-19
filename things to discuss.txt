@@ -1,0 +1,9 @@
+Q-learning is best when the network is congested and expected to be congested, not viable in sparse or “free” networks since Q-values only change when a packet comes through. When a packet comes through, then the Q-value is updated and allows for better congestion control.
+
+Dijkstra’s with Q-learning? We started with a naive implementation where Q-values are all initialized to zero, and then it improves with our Q-learning model.
+
+Include the network topology graph in Princeton paper
+
+Discuss various alternatives, why Q-learning might be a preferred routing algorithm and why others might do better. 
+
+Discuss limitations and optimizations of these methods
