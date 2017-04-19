@@ -34,6 +34,40 @@ class Setup:
 			self.genLink(self.networkMap["Router"][1], self.networkMap["Router"][2])
 			self.genLink(self.networkMap["Router"][1], self.networkMap["Router"][3])
 			self.genLink(self.networkMap["Router"][2], self.networkMap["Router"][3])
+		elif configuration == "4x4":
+			self.numDevices = 16
+			self.numNodes = 16
+			self.initNodes(16, 16)
+
+			for i in range(16): #Want to look at devices #30 and #35
+				self.genLink(self.networkMap["Device"][i], self.networkMap["Router"][i])
+
+			self.genLink(self.networkMap["Router"][0], self.networkMap["Router"][1])
+			self.genLink(self.networkMap["Router"][1], self.networkMap["Router"][2])
+			self.genLink(self.networkMap["Router"][2], self.networkMap["Router"][3])
+			self.genLink(self.networkMap["Router"][1], self.networkMap["Router"][5])
+			self.genLink(self.networkMap["Router"][0], self.networkMap["Router"][4])
+
+			self.genLink(self.networkMap["Router"][2], self.networkMap["Router"][6])
+			self.genLink(self.networkMap["Router"][3], self.networkMap["Router"][7])
+			self.genLink(self.networkMap["Router"][4], self.networkMap["Router"][5])
+			self.genLink(self.networkMap["Router"][5], self.networkMap["Router"][6])
+
+			self.genLink(self.networkMap["Router"][6], self.networkMap["Router"][7])
+			self.genLink(self.networkMap["Router"][4], self.networkMap["Router"][8])
+			self.genLink(self.networkMap["Router"][5], self.networkMap["Router"][9])
+			self.genLink(self.networkMap["Router"][6], self.networkMap["Router"][10])
+			self.genLink(self.networkMap["Router"][7], self.networkMap["Router"][11])
+			self.genLink(self.networkMap["Router"][8], self.networkMap["Router"][9])
+			self.genLink(self.networkMap["Router"][10], self.networkMap["Router"][11])
+			self.genLink(self.networkMap["Router"][8], self.networkMap["Router"][12])
+			self.genLink(self.networkMap["Router"][9], self.networkMap["Router"][13])
+			self.genLink(self.networkMap["Router"][10], self.networkMap["Router"][14])
+			self.genLink(self.networkMap["Router"][11], self.networkMap["Router"][15])
+			self.genLink(self.networkMap["Router"][12], self.networkMap["Router"][13])
+			self.genLink(self.networkMap["Router"][14], self.networkMap["Router"][15])
+
+
 		elif configuration == "6x6":
 			self.numDevices = 19
 			self.numNodes = 36
@@ -261,16 +295,18 @@ s = Setup(5, 4, "6x6") #Simple, Diamond, or 6x6
 sCopy = copy.deepcopy(s)
 avg1 = []
 avg2 = []
-s.simulate(10,False, "6x6")
+s.simulate(10,False, "4x4")
 for i in range(10):
-	s.simulate(10, True, "6x6")
-	sCopy.simulate(10, False, "6x6")
-	completed1 = s.completeForDevice(15,18)
-	completed11 = s.completeForDevice(18,15)
-	completed2 = sCopy.completeForDevice(15,18)
-	completed22 = sCopy.completeForDevice(18,15)
-	avg1.append(s.computeAvg(completed1, completed11))
-	avg2.append(sCopy.computeAvg(completed2, completed22))
+	s.simulate(10, True, "4x4")
+	sCopy.simulate(10, False, "4x4")
+	s.getCompleted()
+	sCopy.getCompleted()
+	# completed1 = s.completeForDevice(15,18)
+	# completed11 = s.completeForDevice(18,15)
+	# completed2 = sCopy.completeForDevice(15,18)
+	# completed22 = sCopy.completeForDevice(18,15)
+	# avg1.append(s.computeAvg(completed1, completed11))
+	# avg2.append(sCopy.computeAvg(completed2, completed22))
 print("avg1", avg1)
 print("avg2", avg2)
 
