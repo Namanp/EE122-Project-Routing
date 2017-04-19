@@ -45,10 +45,10 @@ class Setup:
 			self.genLink(self.networkMap["Router"][0], self.networkMap["Router"][1])
 			self.genLink(self.networkMap["Router"][1], self.networkMap["Router"][2])
 			self.genLink(self.networkMap["Router"][2], self.networkMap["Router"][3])
-			self.genLink(self.networkMap["Router"][1], self.networkMap["Router"][5])
+			# self.genLink(self.networkMap["Router"][1], self.networkMap["Router"][5])
 			self.genLink(self.networkMap["Router"][0], self.networkMap["Router"][4])
 
-			self.genLink(self.networkMap["Router"][2], self.networkMap["Router"][6])
+			# self.genLink(self.networkMap["Router"][2], self.networkMap["Router"][6])
 			self.genLink(self.networkMap["Router"][3], self.networkMap["Router"][7])
 			self.genLink(self.networkMap["Router"][4], self.networkMap["Router"][5])
 			self.genLink(self.networkMap["Router"][5], self.networkMap["Router"][6])
@@ -294,25 +294,41 @@ class Setup:
 			return (a + b)/2 #average the averages
 
 
-s = Setup(5, 4, "6x6") #Simple, Diamond, or 6x6
-#s.getMap()
-# s.testD()
-sCopy = copy.deepcopy(s)
-avg1 = []
-avg2 = []
-s.simulate(100,False, "4x4")
-for i in range(1000):
-	s.simulate(1, True, "4x4")
-	sCopy.simulate(1, False, "4x4")
-	# s.getCompleted()
-	# sCopy.getCompleted()
-	completed1 = s.completeForDevice(12,15)
-	completed11 = s.completeForDevice(15,12)
-	completed2 = sCopy.completeForDevice(12,15)
-	completed22 = sCopy.completeForDevice(15,12)
-	avg1.append(s.computeAvg(completed1, completed11))
-	avg2.append(sCopy.computeAvg(completed2, completed22))
-print("avg1", avg1)
-print("avg2", avg2)
+import numpy as np
+
+def avgArr(arr):
+	total = arr[0]
+	for i in range(1, len(arr)):
+		total += arr[i]
+	return total / len(arr)
+
+allAvg1 = []
+allAvg2 = []
+for i in range(10):
+	print("sample", i)
+	s = Setup(5, 4, "6x6") #Simple, Diamond, or 6x6
+	#s.getMap()
+	# s.testD()
+	sCopy = copy.deepcopy(s)
+	avg1 = []
+	avg2 = []
+	s.simulate(100,False, "4x4")
+	for i in range(1000):
+		s.simulate(1, True, "4x4")
+		sCopy.simulate(1, False, "4x4")
+		# s.getCompleted()
+		# sCopy.getCompleted()
+		completed1 = s.completeForDevice(12,15)
+		completed11 = s.completeForDevice(15,12)
+		completed2 = sCopy.completeForDevice(12,15)
+		completed22 = sCopy.completeForDevice(15,12)
+		avg1.append(s.computeAvg(completed1, completed11))
+		avg2.append(sCopy.computeAvg(completed2, completed22))
+	allAvg1.append(np.array(avg1))
+	allAvg2.append(np.array(avg2))
+print("final1", avgArr(allAvg1))
+print("final2", avgArr(allAvg2))
+
+
 
 

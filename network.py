@@ -37,6 +37,7 @@ class Device(Thing):
 				self.state = 1
 				path = self.findPath(destination)[2:]
 				self.packet = Packet(self.ID, destination.ID, random.randint(160,524280), path)
+				# self.packet = Packet(self.ID, destination.ID, 160, path)
 				self.bitsRemaining = self.packet.size
 
 		if self.state == 1: #transmitting, subtracts from bits remaining
