@@ -35,12 +35,13 @@ class Setup:
 			self.genLink(self.networkMap["Router"][1], self.networkMap["Router"][3])
 			self.genLink(self.networkMap["Router"][2], self.networkMap["Router"][3])
 		elif configuration == "6x6":
-			self.numDevices = 36
+			self.numDevices = 19
 			self.numNodes = 36
-			self.initNodes(36,36)
+			self.initNodes(19,36)
 
-			for i in range(36): #Want to look at devices #30 and #35
-				self.genLink(self.networkMap["Device"][i], self.networkMap["Router"][i])
+			for i in range(0,36,2): #Want to look at devices #30 and #35
+				self.genLink(self.networkMap["Device"][i//2], self.networkMap["Router"][i])
+			self.genLink(self.networkMap["Device"][18], self.networkMap["Router"][35])
 
 			self.genLink(self.networkMap["Router"][0], self.networkMap["Router"][1])
 			self.genLink(self.networkMap["Router"][1], self.networkMap["Router"][2])
@@ -158,10 +159,10 @@ class Setup:
 
 	def pickDevice(self, currDevice, shape): #return a destination for a new packet
 		if shape == "6x6":
-			if currDevice.ID == 30:
-				return self.networkMap["Device"][35]
-			if currDevice.ID == 35:
-				return self.networkMap["Device"][30]
+			if currDevice.ID == 15:
+				return self.networkMap["Device"][18]
+			if currDevice.ID == 18:
+				return self.networkMap["Device"][15]
 		if shape == "Diamond":
 			if currDevice.ID == 0:
 				return self.networkMap["Device"][3]
@@ -228,20 +229,34 @@ class Setup:
 			print(device.ID)
 			print(device.completed)
 
+	def completeForDevice(self, device1ID, device2ID):
+		return self.networkMap["Device"][device2ID].completed[device1ID]
+
 	def testD(self):
 		dev = self.networkMap["Device"][0]
 		dev.dijikstra()
 		path = dev.findPath(self.networkMap["Device"][3])
 		print(path)
 
-s = Setup(5, 4, "Diamond") #Simple, Diamond, or 6x6
+	def computeAvg(self, timeLsts):
+		return sum([time[1]/time[0] for time in timeLsts])/len(timeLsts)
+
+
+s = Setup(5, 4, "6x6") #Simple, Diamond, or 6x6
 #s.getMap()
 # s.testD()
 sCopy = copy.deepcopy(s)
-s.simulate(10e1, True, "Diamond")
-sCopy.simulate(10e1, False, "Diamond")
+avg1 = []
+avg2 = []
+s.simulate(10,False, "6x6")
+for i in range(1):
+	s.simulate(100, True, "6x6")
+	sCopy.simulate(100, False, "6x6")
+	completed1 = s.getCompleted()
+	completed2 = sCopy.getCompleted() 
+	avg1.append(s.computeAvg(completed1))
+	avg2.append(sCopy.computeAvg(completed2))
+print("avg1", avg1)
+print("avg2", avg2)
 
-s.getCompleted()
-sCopy.getCompleted()
-        
 

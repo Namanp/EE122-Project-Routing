@@ -33,7 +33,7 @@ class Device(Thing):
 
 	def timePass(self, time, destination, protocol=True): #takes in time and destination ID, True = Q-value, False = Dijikstra's
 		if self.router and self.state == 0: #free and connected to internet
-			if random.random() < 0.5: #with 50% probability, generate packet and send
+			if random.random() < 0.75: #with 50% probability, generate packet and send
 				self.state = 1
 				path = self.findPath(destination)[2:]
 				self.packet = Packet(self.ID, destination.ID, random.randint(160,524280), path)
@@ -94,7 +94,7 @@ class Device(Thing):
 			self.completed[src] = [[packet.size, packet.delay]]
 
 class Router(Thing):
-	alpha = 0.1
+	alpha = 0.66
 	def __init__(self):
 		self.linkList = {} #dictionary of neighboring routers and throughputs to them
 		self.qValues = util.Counter()
@@ -212,8 +212,7 @@ class Router(Thing):
 
 				self.currentPacket.path += [self.target]
 				if isinstance(self.target, Router):
-					if protocol:
-						self.qUpdate(self.minLink, self.currentPacket) #updates Q value based on the neighbor
+					self.qUpdate(self.target, self.currentPacket) #updates Q value based on the neighbor
 					self.currentPacket.transmissionDelay = 0
 					self.currentPacket.qDelay = 0
 					self.target.enqueue(self.currentPacket) #puts packet in next router's queue
