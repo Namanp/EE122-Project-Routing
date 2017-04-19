@@ -20,7 +20,7 @@ class Setup:
 			self.genLink(self.networkMap["Device"][0], self.networkMap["Router"][0])
 			self.genLink(self.networkMap["Device"][1], self.networkMap["Router"][1])
 			self.genLink(self.networkMap["Router"][0], self.networkMap["Router"][1])
-		elif configuration == "Diamond":
+		elif configuration == "Diamond": #0 and 3
 			self.numDevices = 5
 			self.numNodes = 4
 			self.initNodes(5,4)
@@ -156,7 +156,17 @@ class Setup:
 		for dev in self.networkMap["Device"]:
 			dev.dijikstra()
 
-	def pickDevice(self, currDevice): #return a destination for a new packet
+	def pickDevice(self, currDevice, shape): #return a destination for a new packet
+		if shape == "6x6":
+			if currDevice.ID == 30:
+				return self.networkMap["Device"][35]
+			if currDevice.ID == 35:
+				return self.networkMap["Device"][30]
+		if shape == "Diamond":
+			if currDevice.ID == 0:
+				return self.networkMap["Device"][3]
+			if currDevice.ID == 3:
+				return self.networkMap["Device"][0]
 		deviceList = list(self.networkMap["Device"])
 		deviceList.remove(currDevice)
 		return random.sample(deviceList, 1)[0]
@@ -187,7 +197,7 @@ class Setup:
 				print("router", currNode.router.ID)
 
 
-	def simulate(self, time, protocol):
+	def simulate(self, time, protocol=False, shape=False):
 		requestedRuntime = time
 		while time > 0:	
 			# find shortest action
@@ -203,7 +213,7 @@ class Setup:
 			# fast forward time
 			for i in range(self.numDevices):
 				currDevice = self.networkMap["Device"][i]
-				dest = self.pickDevice(currDevice)
+				dest = self.pickDevice(currDevice, shape)
 				currDevice.timePass(minTime, dest, protocol)
 			for i in range(self.numNodes):
 				self.networkMap["Router"][i].timePass(minTime, protocol)
@@ -224,12 +234,12 @@ class Setup:
 		path = dev.findPath(self.networkMap["Device"][3])
 		print(path)
 
-s = Setup(5, 4, "6x6") #Simple, Diamond, or 6x6
-s.getMap()
+s = Setup(5, 4, "Diamond") #Simple, Diamond, or 6x6
+#s.getMap()
 # s.testD()
 sCopy = copy.deepcopy(s)
-s.simulate(10e1, True)
-sCopy.simulate(10e1, False)
+s.simulate(10e1, True, "Diamond")
+sCopy.simulate(10e1, False, "Diamond")
 
 s.getCompleted()
 sCopy.getCompleted()
