@@ -320,10 +320,12 @@ for i in range(1000):
 	completed11 = s.completeForDevice(15,12)
 	completed2 = sCopy.completeForDevice(12,15)
 	completed22 = sCopy.completeForDevice(15,12)
+	allAvg1.append(s.computeAvg(completed1, completed11))
+	allAvg2.append(sCopy.computeAvg(completed2, completed22))
 
 
-print("final1", s.computeAvg(completed1, completed11))
-print("final2", sCopy.computeAvg(completed2, completed22))
+print("final1", allAvg1)
+print("final2", allAvg2)
 
 
 
