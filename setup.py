@@ -310,10 +310,10 @@ s = Setup(5, 4, "4x4") #Simple, Diamond, or 6x6
 	# s.testD()
 sCopy = copy.deepcopy(s)
 s.simulate(100,False, "4x4")
-for i in range(1000):
+for i in range(100):
 	print(i)
-	s.simulate(1, True, "4x4")
-	sCopy.simulate(1, False, "4x4")
+	s.simulate(10, True, "4x4")
+	sCopy.simulate(10, False, "4x4")
 		# s.getCompleted()
 		# sCopy.getCompleted()
 	completed1 = s.completeForDevice(12,15)
