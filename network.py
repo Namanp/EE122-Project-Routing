@@ -33,7 +33,7 @@ class Device(Thing):
 
 	def timePass(self, time, destination, protocol=True): #takes in time and destination ID, True = Q-value, False = Dijikstra's
 		if self.router and self.state == 0: #free and connected to internet
-			if random.random() < 0.75: #with 50% probability, generate packet and send
+			if random.random() < 0.5: #with 50% probability, generate packet and send
 				self.state = 1
 				path = self.findPath(destination)[2:]
 				self.packet = Packet(self.ID, destination.ID, random.randint(160,524280), path)
@@ -217,8 +217,12 @@ class Router(Thing):
 					self.currentPacket.transmissionDelay = 0
 					self.currentPacket.qDelay = 0
 					self.target.enqueue(self.currentPacket) #puts packet in next router's queue
+					self.currentPacket.qPath.append(self.target.ID)
 				else: #target is a device/destination
 					#print("made it!!!")
+					self.currentPacket.qPath.append(self.target.ID)
+					if (self.currentPacket.srcID == 12 or self.currentPacket.srcID == 15) and protocol:
+						print("qPath from", self.currentPacket.srcID, "to", self.currentPacket.destID, "is", self.currentPacket.qPath)
 					self.target.receive(self.currentPacket)
 				self.target = None
 				self.throughput = 0
@@ -233,6 +237,8 @@ class Router(Thing):
 
 class Packet:
 	def __init__(self, source, destination, size, pathToTake = []):
+		if source == 12 or source == 15:
+			print("dPath from", source, "to", destination, "is", pathToTake)
 		self.srcID = source
 		self.destID = destination
 		self.size = size
@@ -241,4 +247,5 @@ class Packet:
 		self.qDelay = 0 #Delay from queue
 		self.transmissionDelay = 0 #Delay with transmission
 		self.dPath = pathToTake #Dijikstra's path
+		self.qPath = [source]
 		
